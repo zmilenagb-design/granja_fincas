@@ -212,7 +212,7 @@ export class SupabaseHealthRepository implements IHealthRepository {
         vaccine_name: input.vaccine_name.trim(),
         quantity_used: input.quantity_used,
         unit: input.unit.trim(),
-        applied_at: input.applied_at,
+        applied_at: input.applied_at || new Date().toISOString(),
         next_dose_date: input.next_dose_date || null,
         responsible: input.responsible.trim(),
         notes: input.notes?.trim() || null,
@@ -222,6 +222,8 @@ export class SupabaseHealthRepository implements IHealthRepository {
       .single();
 
     if (recErr) throw new Error(`Error al registrar vacuna: ${recErr.message}`);
+
+    const actualAppliedAt = record.applied_at;
 
     // 3. Descontar stock del insumo (mediante función RPC)
     if (input.supply_id) {
@@ -241,7 +243,7 @@ export class SupabaseHealthRepository implements IHealthRepository {
     await this.supabase.from('animal_events').insert({
       animal_id: input.animal_id,
       event_type: 'vacunacion',
-      event_date: input.applied_at,
+      event_date: actualAppliedAt,
       title: `Vacunación: ${input.vaccine_name}`,
       description: `Dosis aplicada: ${input.quantity_used} ${input.unit}${nextDoseText}${input.notes ? ` · ${input.notes}` : ''}`,
       reference_id: (record as VaccinationRecord).id,

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { MilkProductionInput, EggProductionInput, MilkProductionRecord, EggProductionRecord } from '@/types/domain/production.schema';
+import { revalidatePath } from 'next/cache';
 
 // ─── Tipos de filtros ─────────────────────────────────────────────────────────
 

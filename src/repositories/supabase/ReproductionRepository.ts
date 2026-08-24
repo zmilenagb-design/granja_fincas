@@ -424,10 +424,13 @@ export class SupabaseReproductionRepository implements IReproductionRepository {
     const { data: { user }, error: authError } = await this.supabase.auth.getUser();
     if (authError || !user) throw new Error('Debes iniciar sesión.');
 
-    const { data, error } = await this.supabase
+    const eventDate = input.event_date || new Date().toISOString();
+
+    const { data: record, error } = await this.supabase
       .from('reproductive_events')
       .insert({
         ...input,
+        event_date: eventDate,
         registered_by: user.id
       })
       .select()
@@ -439,15 +442,15 @@ export class SupabaseReproductionRepository implements IReproductionRepository {
     await this.supabase.from('animal_events').insert({
       animal_id: input.animal_id,
       event_type: 'reproductivo',
-      event_date: input.event_date,
+      event_date: record.event_date,
       title: this.getEventTitle(input),
       description: this.getEventDescription(input),
-      reference_id: (data as ReproductiveEvent).id,
+      reference_id: (record as ReproductiveEvent).id,
       reference_table: 'reproductive_events',
       performed_by: user.id,
     });
 
-    return data as ReproductiveEvent;
+    return record as ReproductiveEvent;
   }
 
   private getEventTitle(input: CreateReproductiveEventInput): string {

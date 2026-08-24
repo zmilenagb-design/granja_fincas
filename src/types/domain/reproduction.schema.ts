@@ -23,7 +23,6 @@ export const ReproductiveEventTypeEnum = z.enum([
 
 export const ReproductiveResultEnum = z.enum(['pendiente', 'positivo', 'negativo']);
 
-// --- Combined Reproductive Event Schema ---
 export const ReproductiveEventSchema = z.object({
   id: z.string().uuid(),
   event_date: z.string(),
@@ -111,7 +110,7 @@ export type CreateReproductiveEventInput = z.infer<typeof CreateReproductiveEven
 // DTO for Service Form
 export const ServiceRegistrationSchema = z.object({
   animal_id: z.string().uuid(),
-  event_date: z.string().min(1, 'Indica la fecha'),
+  event_date: z.string().optional(),
   service_type: ServiceTypeEnum,
   father_id: z.string().uuid().optional(),
   father_external: z.string().optional(),

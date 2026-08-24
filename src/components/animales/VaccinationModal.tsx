@@ -30,7 +30,6 @@ export default function VaccinationModal({ isOpen, animal, onClose, onSuccess }:
   const [vaccineName, setVaccineName] = useState('');
   const [quantityUsed, setQuantityUsed] = useState('');
   const [unit, setUnit] = useState('');
-  const [appliedAt, setAppliedAt] = useState(todayISO());
   const [nextDoseDate, setNextDoseDate] = useState('');
   const [responsible, setResponsible] = useState('');
   const [notes, setNotes] = useState('');
@@ -109,7 +108,6 @@ export default function VaccinationModal({ isOpen, animal, onClose, onSuccess }:
         vaccine_name: vaccineName.trim(),
         quantity_used: qty,
         unit: unit.trim(),
-        applied_at: new Date(appliedAt).toISOString(),
         next_dose_date: nextDoseDate || undefined,
         responsible: responsible.trim(),
         notes: notes || undefined,
@@ -129,7 +127,6 @@ export default function VaccinationModal({ isOpen, animal, onClose, onSuccess }:
     setVaccineName('');
     setQuantityUsed('');
     setUnit('');
-    setAppliedAt(todayISO());
     setNextDoseDate('');
     setResponsible('');
     setNotes('');
@@ -276,20 +273,7 @@ export default function VaccinationModal({ isOpen, animal, onClose, onSuccess }:
               </div>
             </div>
 
-            {/* Fechas */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">
-                  Fecha Aplicación *
-                </label>
-                <input
-                  type="datetime-local"
-                  value={appliedAt}
-                  onChange={(e) => setAppliedAt(e.target.value)}
-                  className="w-full bg-gray-50 border border-black/5 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:border-[var(--brand)]"
-                  required
-                />
-              </div>
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">
                   Próxima Dosis

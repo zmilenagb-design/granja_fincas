@@ -23,7 +23,6 @@ export default function ServiceModal({ isOpen, animal, onClose, onSuccess }: Pro
   const [error, setError] = useState<string | null>(null);
 
   // Form state
-  const [eventDate, setEventDate] = useState(todayISO());
   const [serviceType, setServiceType] = useState<'IA' | 'monta_natural'>('IA');
   const [fatherId, setFatherId] = useState('');
   const [fatherExternal, setFatherExternal] = useState('');
@@ -65,7 +64,6 @@ export default function ServiceModal({ isOpen, animal, onClose, onSuccess }: Pro
       await reproRepo.registerEvent({
         animal_id: animal.id,
         event_type: 'servicio',
-        event_date: new Date(eventDate).toISOString(),
         service_type: serviceType,
         father_id: fatherId || null,
         father_external: fatherExternal.trim() || null,
@@ -84,7 +82,6 @@ export default function ServiceModal({ isOpen, animal, onClose, onSuccess }: Pro
   };
 
   const handleClose = () => {
-    setEventDate(todayISO());
     setServiceType('IA');
     setFatherId('');
     setFatherExternal('');
@@ -136,22 +133,8 @@ export default function ServiceModal({ isOpen, animal, onClose, onSuccess }: Pro
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {/* Fecha */}
-            <div>
-              <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">
-                Fecha y Hora *
-              </label>
-              <input
-                type="datetime-local"
-                value={eventDate}
-                onChange={(e) => setEventDate(e.target.value)}
-                className="w-full bg-gray-50 border border-black/5 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:border-pink-500"
-                required
-              />
-            </div>
-
             {/* Responsable */}
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">
                 Responsable *
               </label>

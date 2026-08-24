@@ -180,7 +180,7 @@ export const CreateVaccinationInputSchema = z.object({
   vaccine_name: z.string().min(2, 'Ingresa el nombre de la vacuna'),
   quantity_used: z.number().positive('La cantidad debe ser mayor a 0'),
   unit: z.string().min(1, 'Indica la unidad'),
-  applied_at: z.string().min(1, 'Indica la fecha de aplicación'),
+  applied_at: z.string().optional(),
   next_dose_date: z.string().nullable().optional(),
   responsible: z.string().min(2, 'Indica el responsable de la aplicación'),
   notes: z.string().nullable().optional(),

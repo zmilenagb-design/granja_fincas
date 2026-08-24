@@ -30,7 +30,6 @@ export default function MassVaccinationModal({ isOpen, onClose, onSuccess }: Pro
   const [vaccineName, setVaccineName] = useState('');
   const [quantityPerAnimal, setQuantityPerAnimal] = useState('');
   const [unit, setUnit] = useState('');
-  const [appliedAt, setAppliedAt] = useState(todayISO());
   const [nextDoseDate, setNextDoseDate] = useState('');
   const [responsible, setResponsible] = useState('');
   const [notes, setNotes] = useState('');
@@ -161,7 +160,6 @@ export default function MassVaccinationModal({ isOpen, onClose, onSuccess }: Pro
           vaccine_name: vaccineName.trim(),
           quantity_used: qty,
           unit: unit.trim(),
-          applied_at: new Date(appliedAt).toISOString(),
           next_dose_date: nextDoseDate || undefined,
           responsible: responsible.trim(),
           notes: notes || undefined,
@@ -186,7 +184,6 @@ export default function MassVaccinationModal({ isOpen, onClose, onSuccess }: Pro
     setVaccineName('');
     setQuantityPerAnimal('');
     setUnit('');
-    setAppliedAt(todayISO());
     setNextDoseDate('');
     setResponsible('');
     setNotes('');
@@ -212,7 +209,7 @@ export default function MassVaccinationModal({ isOpen, onClose, onSuccess }: Pro
               <Syringe className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-gray-900">Vacunación Masiva</h2>
+              <h2 className="text-lg font-black text-gray-900">Aplicar Vacuna</h2>
               <p className="text-xs font-bold text-gray-400">Aplica una vacuna a múltiples animales</p>
             </div>
           </div>
@@ -404,18 +401,6 @@ export default function MassVaccinationModal({ isOpen, onClose, onSuccess }: Pro
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">
-                    Fecha Aplicación *
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={appliedAt}
-                    onChange={(e) => setAppliedAt(e.target.value)}
-                    className="w-full bg-gray-50 border border-black/5 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:border-[var(--brand)]"
-                    required
-                  />
-                </div>
                 <div>
                   <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">
                     Próxima Dosis
