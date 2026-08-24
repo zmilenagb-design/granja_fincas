@@ -6,6 +6,7 @@ import DashboardLoading from './loading';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { SidebarProvider } from '@/contexts/SidebarContext';
+import { SearchProvider } from '@/contexts/SearchContext'; // ✅ NUEVO
 import { SupabaseProfileRepository } from '@/repositories/supabase/ProfileRepository';
 import { redirect } from 'next/navigation';
 
@@ -44,14 +45,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <SidebarProvider>
-      <DashboardShell
-        header={<Header user={userData} />}
-        sidebar={<Sidebar role={userData.role} />}
-      >
-        <React.Suspense fallback={<DashboardLoading />}>
-          {children}
-        </React.Suspense>
-      </DashboardShell>
+      <SearchProvider> {/* ✅ NUEVO */}
+        <DashboardShell
+          header={<Header user={userData} />}
+          sidebar={<Sidebar role={userData.role} />}
+        >
+          <React.Suspense fallback={<DashboardLoading />}>
+            {children}
+          </React.Suspense>
+        </DashboardShell>
+      </SearchProvider>
     </SidebarProvider>
   );
 }

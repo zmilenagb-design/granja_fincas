@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Syringe, Plus, Pencil, Trash2, Loader2, ChevronDown, AlertTriangle, X, Syringe as SyringeIcon } from 'lucide-react';
+import { Syringe, Plus, Pencil, Trash2, Loader2, ChevronDown, AlertTriangle, X, Search } from 'lucide-react';
 import { RoleGuard } from '@/components/RoleGuard';
 import PageHeader from '@/components/ui/PageHeader';
 import Badge from '@/components/ui/Badge';
@@ -26,11 +26,16 @@ const EMPTY_FORM: CreateVaccineSchemeInput = {
 
 export default function VacunacionPage() {
   const [schemes, setSchemes] = useState<VaccineScheme[]>([]);
+  const [filteredSchemes, setFilteredSchemes] = useState<VaccineScheme[]>([]);
   const [species, setSpecies] = useState<Species[]>([]);
-  const [filterSpeciesId, setFilterSpeciesId] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ── Filtros ──
+  const [searchInput, setSearchInput] = useState('');
+  const [filterSpeciesId, setFilterSpeciesId] = useState('');
+  const [filterMandatory, setFilterMandatory] = useState('all'); // 'all' | 'si' | 'no'
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>('create');
@@ -41,6 +46,17 @@ export default function VacunacionPage() {
   const [healthRepo] = useState(() => new SupabaseHealthRepository(createClient()));
   const [animalRepo] = useState(() => new SupabaseAnimalRepository(createClient()));
 
+  // ── Escuchar búsqueda global del Header ──
+  useEffect(() => {
+    const handleGlobalSearch = (event: Event) => {
+      const term = (event as CustomEvent).detail.term as string;
+      setSearchInput(term);
+    };
+    window.addEventListener('global-search', handleGlobalSearch);
+    return () => window.removeEventListener('global-search', handleGlobalSearch);
+  }, []);
+
+  // ── Cargar datos del servidor (filtra por especie en el servidor) ──
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -59,6 +75,28 @@ export default function VacunacionPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // ── Filtrado del lado del cliente (búsqueda + obligatoria) ──
+  useEffect(() => {
+    let result = schemes;
+
+    if (searchInput.trim()) {
+      const q = searchInput.toLowerCase();
+      result = result.filter(s =>
+        s.vaccine_name.toLowerCase().includes(q) ||
+        s.disease_target.toLowerCase().includes(q)
+      );
+    }
+
+    if (filterMandatory !== 'all') {
+      result = result.filter(s =>
+        filterMandatory === 'si' ? s.is_mandatory : !s.is_mandatory
+      );
+    }
+
+    setFilteredSchemes(result);
+  }, [schemes, searchInput, filterMandatory]);
+
+  // ── Handlers modal ──
   const openCreate = () => {
     setModalMode('create');
     setEditingId(null);
@@ -117,9 +155,12 @@ export default function VacunacionPage() {
     return species.find((s) => s.id === speciesId)?.display_name ?? '—';
   };
 
+  const mandatoryCount = filteredSchemes.filter(s => s.is_mandatory).length;
+
   return (
     <RoleGuard allowedRoles={['ADMINISTRADOR', 'ENCARGADO']} redirectPath="/acceso-denegado">
       <div className="space-y-6 animate-fade-in pb-10">
+
         <PageHeader
           title="Esquemas de Vacunación"
           description="Define las reglas de vacunación para cada especie. Estos esquemas se usarán en el modal de registro para autocompletar fechas y nombres."
@@ -130,8 +171,8 @@ export default function VacunacionPage() {
                 onClick={() => setMassVaccineOpen(true)}
                 className="flex items-center gap-2 px-4 py-2.5 bg-white border border-black/5 rounded-xl font-bold text-sm text-gray-700 hover:bg-gray-50 shadow-sm transition-all"
               >
-                <SyringeIcon size={16} className="text-emerald-500" />
-                Aplicar Vacuna
+                <Syringe size={16} className="text-emerald-500" />
+                Vacunación Masiva
               </button>
               <button
                 onClick={openCreate}
@@ -144,42 +185,85 @@ export default function VacunacionPage() {
           }
         />
 
-        {/* Filtro por especie */}
-        <div className="flex items-center gap-3">
-          <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">
-            Filtrar por especie
-          </label>
-          <div className="relative">
+        {/* ── Panel de filtros ── */}
+        <div className="bg-white p-6 rounded-[1.5rem] shadow-sm border border-black/5 space-y-4">
+
+          {/* Fila 1: búsqueda + especie + obligatoria */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Búsqueda */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                placeholder="Buscar por vacuna o enfermedad..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-black/5 rounded-xl font-medium text-gray-700 outline-none focus:border-[var(--brand)] transition-colors"
+              />
+            </div>
+
+            {/* Especie */}
             <select
               value={filterSpeciesId}
               onChange={(e) => setFilterSpeciesId(e.target.value)}
-              className="appearance-none bg-white border border-black/5 rounded-xl px-4 py-2 text-sm font-bold text-gray-700 outline-none focus:border-[var(--brand)] pr-8 shadow-sm"
+              className="bg-gray-50 border border-black/5 rounded-xl px-4 py-2.5 font-medium text-gray-700 outline-none focus:border-[var(--brand)] transition-colors"
             >
-              <option value="">Todas</option>
+              <option value="">Todas las especies</option>
               {species.map((s) => (
                 <option key={s.id} value={s.id}>{s.display_name}</option>
               ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-2.5 h-4 w-4 text-gray-400" />
+
+            {/* Obligatoria */}
+            <select
+              value={filterMandatory}
+              onChange={(e) => setFilterMandatory(e.target.value)}
+              className="bg-gray-50 border border-black/5 rounded-xl px-4 py-2.5 font-medium text-gray-700 outline-none focus:border-[var(--brand)] transition-colors"
+            >
+              <option value="all">Todas las vacunas</option>
+              <option value="si">Obligatorias</option>
+              <option value="no">Opcionales</option>
+            </select>
+
+            <div />
+          </div>
+
+          {/* Fila 2: KPIs */}
+          <div className="flex justify-end pt-4 border-t border-gray-100">
+            <div className="flex items-center gap-6 px-4">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">Total esquemas</span>
+                <span className="text-xl font-black text-gray-900 leading-none mt-1">
+                  {loading ? '—' : filteredSchemes.length}
+                </span>
+              </div>
+              <div className="w-[1px] h-8 bg-gray-100" />
+              <div className="flex flex-col">
+                <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">Obligatorias</span>
+                <span className={`text-xl font-black leading-none mt-1 ${mandatoryCount > 0 ? 'text-red-500' : 'text-gray-900'}`}>
+                  {loading ? '—' : mandatoryCount}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Tabla de esquemas */}
+        {/* ── Tabla de esquemas ── */}
         <div className="bg-white rounded-[2rem] shadow-sm border border-black/5 overflow-hidden">
           <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
             <h3 className="font-extrabold text-gray-900">Esquemas Registrados</h3>
-            <Badge variant="neutral">{schemes.length} esquemas</Badge>
+            <Badge variant="neutral">{filteredSchemes.length} esquemas</Badge>
           </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-[var(--brand)]" />
             </div>
-          ) : schemes.length === 0 ? (
+          ) : filteredSchemes.length === 0 ? (
             <div className="py-20 text-center">
               <Syringe className="h-12 w-12 text-gray-200 mx-auto mb-4" />
-              <p className="font-bold text-gray-400">No hay esquemas registrados aún.</p>
-              <p className="text-sm text-gray-300 mt-1">Crea el primero con el botón &quot;Nuevo Esquema&quot;</p>
+              <p className="font-bold text-gray-400">No se encontraron esquemas.</p>
+              <p className="text-sm text-gray-300 mt-1">Intenta ajustar los filtros o crea uno nuevo.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -196,7 +280,7 @@ export default function VacunacionPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-black/5">
-                  {schemes.map((s) => (
+                  {filteredSchemes.map((s) => (
                     <tr key={s.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 font-black text-gray-900">{s.vaccine_name}</td>
                       <td className="px-6 py-4">
@@ -241,7 +325,7 @@ export default function VacunacionPage() {
         </div>
       </div>
 
-      {/* Modal Crear/Editar Esquema */}
+      {/* ── Modal Crear/Editar ── */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
@@ -266,9 +350,7 @@ export default function VacunacionPage() {
             <form onSubmit={handleSave} className="p-6 space-y-4">
               {/* Especie */}
               <div>
-                <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">
-                  Especie
-                </label>
+                <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Especie</label>
                 <div className="relative">
                   <select
                     value={form.species_id ?? ''}
@@ -286,64 +368,46 @@ export default function VacunacionPage() {
 
               {/* Nombre vacuna */}
               <div>
-                <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">
-                  Nombre de la Vacuna *
-                </label>
+                <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Nombre de la Vacuna *</label>
                 <input
-                  type="text"
+                  type="text" required
                   value={form.vaccine_name}
                   onChange={(e) => setForm((f) => ({ ...f, vaccine_name: e.target.value }))}
                   placeholder="Ej: Fiebre Aftosa, Newcastle..."
                   className="w-full bg-gray-50 border border-black/5 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:border-[var(--brand)]"
-                  required
                 />
               </div>
 
               {/* Enfermedad objetivo */}
               <div>
-                <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">
-                  Enfermedad Objetivo *
-                </label>
+                <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Enfermedad Objetivo *</label>
                 <input
-                  type="text"
+                  type="text" required
                   value={form.disease_target}
                   onChange={(e) => setForm((f) => ({ ...f, disease_target: e.target.value }))}
                   placeholder="Ej: Aftosa, Brucelosis..."
                   className="w-full bg-gray-50 border border-black/5 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:border-[var(--brand)]"
-                  required
                 />
               </div>
 
               {/* Días primera dosis + Refuerzo */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">
-                    Primera Dosis (días)
-                  </label>
+                  <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Primera Dosis (días)</label>
                   <input
-                    type="number"
-                    min="1"
+                    type="number" min="1"
                     value={form.apply_at_age_days ?? ''}
-                    onChange={(e) => setForm((f) => ({
-                      ...f,
-                      apply_at_age_days: e.target.value ? parseInt(e.target.value) : null,
-                    }))}
+                    onChange={(e) => setForm((f) => ({ ...f, apply_at_age_days: e.target.value ? parseInt(e.target.value) : null }))}
                     placeholder="Edad (días)"
                     className="w-full bg-gray-50 border border-black/5 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:border-[var(--brand)]"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">
-                    Refuerzo (días)
-                  </label>
+                  <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Refuerzo (días)</label>
                   <input
-                    type="number"
-                    min="1"
+                    type="number" min="1"
                     value={form.revaccinate_every_days ?? ''}
-                    onChange={(e) => setForm((f) => ({
-                      ...f,
-                      revaccinate_every_days: e.target.value ? parseInt(e.target.value) : null,
-                    }))}
+                    onChange={(e) => setForm((f) => ({ ...f, revaccinate_every_days: e.target.value ? parseInt(e.target.value) : null }))}
                     placeholder="Cada N días"
                     className="w-full bg-gray-50 border border-black/5 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:border-[var(--brand)]"
                   />
@@ -353,26 +417,21 @@ export default function VacunacionPage() {
               {/* Obligatoria */}
               <div className="flex items-center gap-3">
                 <input
-                  type="checkbox"
-                  id="is_mandatory"
+                  type="checkbox" id="is_mandatory"
                   checked={form.is_mandatory}
                   onChange={(e) => setForm((f) => ({ ...f, is_mandatory: e.target.checked }))}
                   className="h-4 w-4 accent-[var(--brand)] rounded"
                 />
-                <label htmlFor="is_mandatory" className="text-sm font-bold text-gray-700">
-                  Vacuna obligatoria
-                </label>
+                <label htmlFor="is_mandatory" className="text-sm font-bold text-gray-700">Vacuna obligatoria</label>
               </div>
 
               {/* Notas */}
               <div>
-                <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">
-                  Notas
-                </label>
+                <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Notas</label>
                 <textarea
+                  rows={2}
                   value={form.notes ?? ''}
                   onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value || null }))}
-                  rows={2}
                   placeholder="Observaciones del protocolo..."
                   className="w-full bg-gray-50 border border-black/5 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:border-[var(--brand)] resize-none"
                 />
@@ -394,8 +453,7 @@ export default function VacunacionPage() {
                   Cancelar
                 </button>
                 <button
-                  type="submit"
-                  disabled={saving}
+                  type="submit" disabled={saving}
                   className="flex-1 py-3 rounded-xl bg-[var(--brand)] text-white font-bold text-sm hover:bg-[var(--brand-hover)] transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
                 >
                   {saving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}

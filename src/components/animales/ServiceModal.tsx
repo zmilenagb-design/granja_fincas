@@ -6,7 +6,6 @@ import { createClient } from '@/utils/supabase/client';
 import { SupabaseReproductionRepository } from '@/repositories/supabase/ReproductionRepository';
 import { SupabaseAnimalRepository } from '@/repositories/supabase/AnimalRepository';
 import type { AnimalWithRelations } from '@/types/domain/animal.schema';
-import type { ServiceTypeEnum } from '@/types/domain/reproduction.schema';
 
 interface Props {
   isOpen: boolean;
@@ -213,8 +212,8 @@ export default function ServiceModal({ isOpen, animal, onClose, onSuccess }: Pro
           <div className="p-4 bg-blue-50/50 rounded-2xl flex items-start gap-3">
              <Info className="text-blue-500 shrink-0 mt-0.5" size={16} />
              <p className="text-[11px] font-bold text-blue-700 leading-relaxed">
-               Al registrar el servicio, el estado del animal pasará a <span className="underline">EN GESTIÓN</span>. 
-               Recuerda programar el diagnóstico reproductivo para confirmar la preñez.
+                Al registrar el servicio, el sistema actualizará el ciclo del animal. 
+                Recuerda programar el diagnóstico reproductivo para confirmar la preñez.
              </p>
           </div>
 

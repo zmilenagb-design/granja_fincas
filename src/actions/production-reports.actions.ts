@@ -12,23 +12,23 @@ export async function getProductionStats(days: number = 7) {
   // Fetch Milk Records
   const { data: milkData } = await (await supabase)
     .from('milk_production')
-    .select('production_date, quantity_liters')
-    .gte('production_date', fromDateStr)
-    .order('production_date', { ascending: true });
+    .select('date, quantity_liters')
+    .gte('date', fromDateStr)
+    .order('date', { ascending: true });
 
   // Fetch Egg Records
   const { data: eggData } = await (await supabase)
     .from('egg_production')
-    .select('production_date, quantity_units, discarded_units')
-    .gte('production_date', fromDateStr)
-    .order('production_date', { ascending: true });
+    .select('date, total_quantity, damaged_quantity')
+    .gte('date', fromDateStr)
+    .order('date', { ascending: true });
 
   // Group Milk Data by Date
   const milkMap: Record<string, number> = {};
   let totalMilk = 0;
   if (milkData) {
     milkData.forEach(row => {
-      milkMap[row.production_date] = (milkMap[row.production_date] || 0) + Number(row.quantity_liters);
+      milkMap[row.date] = (milkMap[row.date] || 0) + Number(row.quantity_liters);
       totalMilk += Number(row.quantity_liters);
     });
   }
@@ -39,14 +39,14 @@ export async function getProductionStats(days: number = 7) {
   let totalDamagedEggs = 0;
   if (eggData) {
     eggData.forEach(row => {
-      if (!eggMap[row.production_date]) {
-        eggMap[row.production_date] = { total: 0, damaged: 0 };
+      if (!eggMap[row.date]) {
+        eggMap[row.date] = { total: 0, damaged: 0 };
       }
-      eggMap[row.production_date].total += Number(row.quantity_units);
-      eggMap[row.production_date].damaged += Number(row.discarded_units || 0);
+      eggMap[row.date].total += Number(row.total_quantity);
+      eggMap[row.date].damaged += Number(row.damaged_quantity || 0);
       
-      totalEggs += Number(row.quantity_units);
-      totalDamagedEggs += Number(row.discarded_units || 0);
+      totalEggs += Number(row.total_quantity);
+      totalDamagedEggs += Number(row.damaged_quantity || 0);
     });
   }
 

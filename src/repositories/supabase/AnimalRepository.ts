@@ -1,10 +1,10 @@
-import { IAnimalRepository } from '../IAnimalRepository';
-import { 
-  Animal, 
-  AnimalWithRelations, 
-  CreateAnimalDTO, 
-  Species, 
-  Breed 
+import { IAnimalRepository, SearchParams, SearchResult } from '../IAnimalRepository';
+import {
+  Animal,
+  AnimalWithRelations,
+  CreateAnimalDTO,
+  Species,
+  Breed
 } from '@/types/domain/animal.schema';
 import { SupabaseClient } from '@supabase/supabase-js';
 import {
@@ -29,7 +29,7 @@ function normalizeWeightKg(value: unknown, fallback: number): number {
 }
 
 export class SupabaseAnimalRepository implements IAnimalRepository {
-  constructor(private supabase: SupabaseClient) {}
+  constructor(private supabase: SupabaseClient) { }
 
   async getAll(): Promise<AnimalWithRelations[]> {
     const { data, error } = await this.supabase
@@ -46,6 +46,75 @@ export class SupabaseAnimalRepository implements IAnimalRepository {
     }
 
     return data as AnimalWithRelations[];
+  }
+
+  async search(params: SearchParams): Promise<SearchResult<AnimalWithRelations>> {
+    const {
+      page = 1,
+      limit = 10,
+      sort = 'created_at',
+      order = 'desc',
+      species,
+      healthStatus,
+      vaccinationStatus,
+      sex,
+      status,
+      search
+    } = params;
+
+    let query = this.supabase
+      .from('animals')
+      .select(`
+        *,
+        species:species_id (*),
+        breed:breed_id (*)
+      `, { count: 'exact' })
+      .order(sort, { ascending: order === 'asc' })
+      .range((page - 1) * limit, page * limit - 1);
+
+    // Aplicar filtros
+    if (species && species !== 'Todas') {
+      query = query.eq('species_id', species);
+    }
+
+    // ✅ CORRECCIÓN: Convertir el valor del frontend al formato de la base de datos
+    if (healthStatus && healthStatus !== 'all') {
+      const dbHealthStatus = toDbHealthStatus(healthStatus);
+      query = query.eq('health_status', dbHealthStatus);
+    }
+
+    if (vaccinationStatus && vaccinationStatus !== 'all') {
+      query = query.eq('vaccination_status', vaccinationStatus);
+    }
+
+    if (sex && sex !== 'all') {
+      query = query.eq('sex', sex);
+    }
+
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
+    }
+
+    if (search && search.trim()) {
+      query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%`);
+    }
+
+    const { data, count, error } = await query;
+
+    if (error) {
+      throw new Error(`Error en búsqueda de animales: ${error.message}`);
+    }
+
+    const total = count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: (data || []) as AnimalWithRelations[],
+      total,
+      page,
+      limit,
+      totalPages
+    };
   }
 
   async getById(id: string): Promise<AnimalWithRelations | null> {

@@ -15,12 +15,12 @@ export type MilkProductionInput = z.infer<typeof MilkProductionSchema>;
 export interface MilkProductionRecord {
   id: string;
   animal_id: string;
-  production_date: string;
+  date: string;
   shift: string;
   quantity_liters: number;
   quality_notes: string | null;
   notes: string | null;
-  registered_by: string | null;
+  created_by: string | null;
   created_at: string;
   animal?: {
     code: string;
@@ -46,11 +46,12 @@ export type EggProductionInput = z.infer<typeof EggProductionSchema>;
 export interface EggProductionRecord {
   id: string;
   animal_id: string | null;
-  lot_name: string | null;
-  production_date: string;
-  quantity_units: number;
-  discarded_units: number | null;
+  batch_id: string | null;
+  date: string;
+  total_quantity: number;
+  damaged_quantity: number | null;
   notes: string | null;
-  registered_by: string | null;
+  created_by: string | null;
   created_at: string;
 }
+
